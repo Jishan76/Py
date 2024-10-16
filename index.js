@@ -1,36 +1,51 @@
+const ethers = require('ethers');
 const bitcoin = require('bitcoinjs-lib');
+const bip39 = require('bip39');
 const axios = require('axios');
-const ecc = require('tiny-secp256k1');
 
-// Set ECC to the bitcoinjs-lib
-bitcoin.initEccLib(ecc);
-
-// Function to generate a random Bitcoin private key and check balance
-async function checkRandomBtcWallet() {
-    // Generate a random Bitcoin private key
-    const keyPair = bitcoin.ECPair.makeRandom();
-    const { address } = bitcoin.payments.p2pkh({ pubkey: keyPair.publicKey });
-    const privateKey = keyPair.toWIF(); // Private key in Wallet Import Format (WIF)
-
-    // Check the balance using blockchain.info API
+// Function to generate a random private key for Ethereum and check balance
+async function checkRandomEthereumWallet() {
     try {
-        const response = await axios.get(`https://blockchain.info/q/addressbalance/${address}?confirmations=3`);
-        const balance = response.data / 100000000; // Convert Satoshi to BTC
-        
-        if (balance > 0) {
-            console.log(`Found wallet with balance!`);
-            console.log(`Private key: ${privateKey}`);
-            console.log(`Address: ${address}`);
-            console.log(`Balance: ${balance} BTC`);
+        const randomWallet = ethers.Wallet.createRandom(); // Generate random Ethereum wallet
+        const provider = ethers.getDefaultProvider(); // Connect to Ethereum mainnet
+        const balance = await provider.getBalance(randomWallet.address);
+
+        if (balance.gt(0)) {
+            console.log(`Ethereum Wallet Found! Address: ${randomWallet.address}, Private Key: ${randomWallet.privateKey}, Balance: ${ethers.utils.formatEther(balance)} ETH`);
         } else {
-            console.log(`No balance in address ${address} (Private key: ${privateKey})`);
+            console.log(`Ethereum Wallet ${randomWallet.address} has 0 balance.`);
         }
     } catch (error) {
-        console.error('Error fetching balance:', error);
+        console.error("Error checking Ethereum wallet:", error.message);
     }
 }
 
-// Check random wallets in a loop
-for (let i = 0; i < 10; i++) {  // Check 10 random wallets
-    checkRandomBtcWallet();
+// Function to generate a random private key for Bitcoin and check balance
+async function checkRandomBitcoinWallet() {
+    try {
+        const mnemonic = bip39.generateMnemonic(); // Generate a mnemonic
+        const seed = await bip39.mnemonicToSeed(mnemonic); // Convert to seed
+        const root = bitcoin.bip32.fromSeed(seed); // Generate BIP32 root key
+
+        // Derive the first Bitcoin address (BIP44 path m/44'/0'/0'/0/0)
+        const account = root.derivePath("m/44'/0'/0'/0/0");
+        const { address } = bitcoin.payments.p2pkh({ pubkey: account.publicKey });
+
+        // Fetch balance from a public Bitcoin API
+        const apiURL = `https://blockchain.info/q/addressbalance/${address}?confirmations=6`;
+        const response = await axios.get(apiURL);
+        const balance = response.data / 100000000; // Convert satoshi to BTC
+
+        if (balance > 0) {
+            console.log(`Bitcoin Wallet Found! Address: ${address}, Private Key: ${account.toWIF()}, Balance: ${balance} BTC`);
+        } else {
+            console.log(`Bitcoin Wallet ${address} has 0 balance.`);
+        }
+    } catch (error) {
+        console.error("Error checking Bitcoin wallet:", error.message);
+    }
 }
+
+// Check random wallets
+checkRandomEthereumWallet();
+checkRandomBitcoinWallet();
