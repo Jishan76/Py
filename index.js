@@ -1,5 +1,9 @@
 const bitcoin = require('bitcoinjs-lib');
 const axios = require('axios');
+const ecc = require('tiny-secp256k1');
+
+// Set ECC to the bitcoinjs-lib
+bitcoin.initEccLib(ecc);
 
 // Function to generate a random Bitcoin private key and check balance
 async function checkRandomBtcWallet() {
