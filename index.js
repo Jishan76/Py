@@ -10,8 +10,11 @@ async function checkRandomEthereumWallet() {
         const provider = ethers.getDefaultProvider(); // Connect to Ethereum mainnet
         const balance = await provider.getBalance(randomWallet.address);
 
-        if (balance.gt(0)) {
-            console.log(`Ethereum Wallet Found! Address: ${randomWallet.address}, Private Key: ${randomWallet.privateKey}, Balance: ${ethers.utils.formatEther(balance)} ETH`);
+        // Convert balance to ethers and check if greater than 0
+        const balanceInEth = ethers.utils.formatEther(balance);
+
+        if (parseFloat(balanceInEth) > 0) {
+            console.log(`Ethereum Wallet Found! Address: ${randomWallet.address}, Private Key: ${randomWallet.privateKey}, Balance: ${balanceInEth} ETH`);
         } else {
             console.log(`Ethereum Wallet ${randomWallet.address} has 0 balance.`);
         }
